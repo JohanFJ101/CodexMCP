@@ -1,0 +1,15 @@
+[Unit]
+Description=CodexMCP — offload MCP server
+After=network.target tailscaled.service
+
+[Service]
+Type=simple
+User=johan
+WorkingDirectory=/home/johan/codexmcp
+EnvironmentFile=/home/johan/codexmcp/.env
+ExecStart=/usr/local/bin/codexmcp
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

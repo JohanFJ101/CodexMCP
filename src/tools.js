@@ -1,7 +1,10 @@
 import OpenAI from 'openai';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
+let openai;
+function getClient() {
+  if (!openai) openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  return openai;
+}
 export const TOOLS = [
   {
     name: 'query_offload',
@@ -31,7 +34,7 @@ async function queryOffload({ task, context = '', model = 'smart' }) {
   const modelId = model === 'fast' ? 'gpt-4.1-mini' : 'gpt-5.5';
   const prompt = context ? `Context:\n${context}\n\nTask:\n${task}` : task;
 
-  const response = await openai.chat.completions.create({
+  const response = await getClient().chat.completions.create({
     model: modelId,
     max_tokens: 4096,
     messages: [

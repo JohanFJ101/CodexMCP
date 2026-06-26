@@ -17,29 +17,53 @@ const secret = () => new TextEncoder().encode(process.env.JWT_SECRET);
 
 // ── Well-Known Endpoints ───────────────────────────────────────────────────────
 
-router.get('/.well-known/oauth-protected-resource/mcp', (req, res) => {
+function protectedResourceMetadata(req, res) {
   const base = process.env.TUNNEL_URL;
   res.json({
-    resource: base,
+    resource: `${base}/mcp`,
     authorization_servers: [base],
   });
-});
+}
+// Claude probes the bare path and the /mcp-suffixed path — serve both.
+router.get('/.well-known/oauth-protected-resource/mcp', protectedResourceMetadata);
+router.get('/.well-known/oauth-protected-resource', protectedResourceMetadata);
 
-router.get('/.well-known/oauth-authorization-server', (req, res) => {
+function authServerMetadata(req, res) {
   const base = process.env.TUNNEL_URL;
   res.json({
     issuer: base,
     authorization_endpoint: `${base}/oauth/authorize`,
     token_endpoint: `${base}/oauth/token`,
+    registration_endpoint: `${base}/register`,
     response_types_supported: ['code'],
     code_challenge_methods_supported: ['S256'],
     grant_types_supported: ['authorization_code', 'refresh_token'],
+    token_endpoint_auth_methods_supported: ['none'],
+  });
+}
+router.get('/.well-known/oauth-authorization-server', authServerMetadata);
+router.get('/.well-known/oauth-authorization-server/mcp', authServerMetadata);
+
+// ── Dynamic Client Registration (RFC 7591) ─────────────────────────────────────
+// Claude registers a client before starting the OAuth flow. Without this it
+// aborts before ever reaching /oauth/authorize. Single user — accept anything.
+router.post('/register', (req, res) => {
+  const body = req.body || {};
+  console.log('[register] hit', JSON.stringify(body));
+  res.status(201).json({
+    client_id: crypto.randomBytes(16).toString('hex'),
+    client_id_issued_at: Math.floor(Date.now() / 1000),
+    redirect_uris: body.redirect_uris || VALID_REDIRECT_URIS,
+    grant_types: ['authorization_code', 'refresh_token'],
+    response_types: ['code'],
+    token_endpoint_auth_method: 'none',
   });
 });
 
 // ── Authorization Endpoint ─────────────────────────────────────────────────────
 
 router.get('/oauth/authorize', (req, res) => {
+  console.log('[oauth/authorize] hit', JSON.stringify(req.query));
   const { redirect_uri, code_challenge, code_challenge_method, state, client_id } = req.query;
 
   if (!redirect_uri || !code_challenge || code_challenge_method !== 'S256') {
@@ -129,7 +153,7 @@ router.post('/oauth/token', async (req, res) => {
 export async function requireAuth(req, res, next) {
   const header = req.headers['authorization'];
   if (!header?.startsWith('Bearer ')) {
-    res.set('WWW-Authenticate', `Bearer realm="${process.env.TUNNEL_URL}/.well-known/oauth-protected-resource/mcp"`);
+    res.set('WWW-Authenticate', `Bearer resource_metadata="${process.env.TUNNEL_URL}/.well-known/oauth-protected-resource/mcp"`);
     return res.status(401).json({ error: 'unauthorized' });
   }
 

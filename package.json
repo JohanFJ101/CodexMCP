@@ -6,6 +6,9 @@
   "author": "JohanFJ",
   "type": "module",
   "main": "src/server.js",
+  "bin": {
+    "codexmcp": "bin/codexmcp.js"
+  },
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js"
