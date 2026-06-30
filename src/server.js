@@ -9,7 +9,7 @@ import { router as mcpRouter } from './mcp.js';
 
 // ── Startup validation ─────────────────────────────────────────────────────────
 
-const REQUIRED_ENV = ['TUNNEL_URL', 'OPENAI_API_KEY', 'JWT_SECRET'];
+const REQUIRED_ENV = ['TUNNEL_URL', 'JWT_SECRET'];
 const missing = REQUIRED_ENV.filter((k) => !process.env[k]);
 if (missing.length) {
   console.error(`ERROR: Missing required environment variables: ${missing.join(', ')}`);

@@ -31,9 +31,10 @@ Edit `.env` and fill in:
 | Variable | Description |
 |---|---|
 | `TUNNEL_URL` | Your Tailscale Funnel URL (e.g. `https://t480.tail1234.ts.net`) |
-| `OPENAI_API_KEY` | OpenAI API key |
 | `JWT_SECRET` | Any random 32+ character string |
 | `PORT` | Port to listen on (default `3000`) |
+
+> Inference runs through the **Codex CLI**, not an OpenAI API key. Install it and run `codex login` (ChatGPT subscription) on the host machine before starting the server — `query_offload` shells out to `codex exec`.
 
 ### 4. Tailscale Funnel (T480)
 
